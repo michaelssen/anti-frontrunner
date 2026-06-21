@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Anti-Frontrunner — privacy-first domain search. No backend, no logging, no domain sniping." />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="theme-color" content="#000000" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Anti-Frontrunner — privacy-first domain search" />
+  <meta property="og:description" content="Search domain availability in your browser. No backend, no logging, no sniping." />
+  <meta property="og:image" content="https://privatedomainsearch.com/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Anti-Frontrunner — privacy-first domain search" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Anti-Frontrunner — privacy-first domain search" />
+  <meta name="twitter:description" content="Search domain availability in your browser. No backend, no logging, no sniping." />
+  <meta name="twitter:image" content="https://privatedomainsearch.com/assets/og-image.png" />
+  <link rel="canonical" href="https://ninejack.com/" />
+  <meta property="og:url" content="https://ninejack.com/" />
+  <title>Anti-Frontrunner</title>
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="/assets/favicon-48.png" type="image/png" sizes="48x48" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/tailwind.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --frame-tone: hsl(0, 0%, 10%);
+      --frame-line: hsl(0, 0%, 14%);
+      --frame-outer-w: clamp(10px, 1.5vw, 16px);
+      --frame-line-w: 2px;
+      --frame-mid-w: clamp(10px, 1.6vw, 14px);
+      --frame-total: calc(var(--frame-outer-w) + var(--frame-line-w) + var(--frame-mid-w) + var(--frame-line-w));
+    }
+
+    html, body {
+      min-height: 100%;
+      background: #000000;
+      color: #ffffff;
+    }
+
+    html { background: var(--frame-tone); }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.02em;
+      position: relative;
+      isolation: isolate;
+      padding: var(--frame-total);
+      min-height: 100%;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 44px 44px;
+      background-position: 0 0, 0 0;
+      animation: grid-scroll-left 1s linear infinite;
+      mask-image: radial-gradient(ellipse 90% 80% at 50% 48%, #000 25%, transparent 100%);
+      will-change: background-position;
+    }
+
+    @keyframes grid-scroll-left {
+      from { background-position: 0 0, 0 0; }
+      to { background-position: -44px 0, -44px 0; }
+    }
+
+    /* Opaque viewport mat — content scrolls underneath but never shows through */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      pointer-events: none;
+      background:
+        linear-gradient(var(--frame-tone), var(--frame-tone)) top center / 100% var(--frame-total) no-repeat,
+        linear-gradient(var(--frame-tone), var(--frame-tone)) bottom center / 100% var(--frame-total) no-repeat,
+        linear-gradient(var(--frame-tone), var(--frame-tone)) left center / var(--frame-total) 100% no-repeat,
+        linear-gradient(var(--frame-tone), var(--frame-tone)) right center / var(--frame-total) 100% no-repeat;
+      box-shadow:
+        inset 0 0 0 var(--frame-outer-w) var(--frame-tone),
+        inset 0 0 0 calc(var(--frame-outer-w) + var(--frame-line-w)) var(--frame-line),
+        inset 0 0 0 calc(var(--frame-outer-w) + var(--frame-line-w) + var(--frame-mid-w)) #000000,
+        inset 0 0 0 calc(var(--frame-outer-w) + var(--frame-line-w) + var(--frame-mid-w) + var(--frame-line-w)) var(--frame-tone);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body::before { animation: none; }
+      .results-panel { transition: none !important; }
+    }
+
+    body > * { position: relative; z-index: 1; }
+
+    ::selection { background: rgba(255, 255, 255, 0.2); color: #fff; }
+    ::placeholder { color: #6b7280; opacity: 1; }
+    input:focus { outline: none; }
+
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 0.45; }
+      50% { opacity: 1; }
+    }
+
+    .checking-dot { animation: pulse-soft 1.4s ease-in-out infinite; }
+
+    .search-shell {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(13, 13, 13, 0.92);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .search-shell.is-focused {
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 40px rgba(255, 255, 255, 0.06);
+    }
+
+    .results-panel {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    }
+
+    .results-panel.is-visible { grid-template-rows: 1fr; opacity: 1; }
+    .results-panel-inner { overflow: hidden; }
+
+    .domain-available { color: #39ff14; }
+
+    .domain-taken {
+      color: #52525b;
+      text-decoration: line-through;
+      text-decoration-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .com-badge-available { color: #39ff14; text-shadow: 0 0 10px rgba(57, 255, 20, 0.35); }
+
+    .footer-link {
+      color: #6b7280;
+      text-decoration: none;
+      transition: color 0.12s ease;
+    }
+
+    .footer-link:hover { color: #ffffff; }
+
+    .search-submit {
+      background: #ffffff;
+      color: #000000;
+      transition: background-color 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+    }
+
+    .search-submit:hover:not(:disabled) { background: #e5e5e5; }
+    .search-submit:active:not(:disabled) { transform: scale(0.96); }
+    .search-submit:disabled { opacity: 0.5; cursor: wait; }
+    .search-submit.is-searching { opacity: 0.65; }
+
+    .register-details summary { list-style: none; }
+    .register-details summary::-webkit-details-marker { display: none; }
+
+    .register-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      min-width: 11.5rem;
+      z-index: 20;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(13, 13, 13, 0.98);
+      border-radius: 0.625rem;
+      padding: 0.375rem;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .register-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.5rem 0.625rem;
+      border-radius: 0.375rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #fff;
+      text-decoration: none;
+      transition: background-color 0.12s ease;
+    }
+
+    .register-option:hover { background: rgba(255, 255, 255, 0.08); }
+
+    .register-option-tag {
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b7280;
+    }
+
+    .copy-domain-btn.is-copied { color: #39ff14; }
+
+    .retry-domain-btn {
+      font: inherit;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .privacy-cards {
+      padding-top: 2.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .privacy-cards { padding-top: 3rem; }
+    }
+
+    .tld-guide {
+      padding-top: 3rem;
+      margin-top: 0.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .tld-guide { padding-top: 3.5rem; }
+    }
+
+    .tld-guide-intro {
+      font-size: 0.9375rem;
+      line-height: 1.65;
+      color: #6b7280;
+      margin: 0 0 1.75rem;
+      max-width: 42rem;
+    }
+
+    .tld-guide-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0.75rem;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .tld-guide-table {
+      width: 100%;
+      min-width: 36rem;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    .tld-guide-table caption {
+      caption-side: top;
+      text-align: left;
+      padding: 1rem 1.25rem 0.75rem;
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: #6b7280;
+    }
+
+    .tld-guide-table th {
+      text-align: left;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #6b7280;
+      padding: 0.875rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      white-space: nowrap;
+    }
+
+    .tld-guide-table td {
+      padding: 1rem 1.25rem;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      color: #9ca3af;
+      line-height: 1.55;
+    }
+
+    .tld-guide-table tbody tr:last-child td { border-bottom: none; }
+
+    .tld-guide-ext {
+      font-family: "Roboto Mono", ui-monospace, monospace;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .tld-check-btn {
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #ffffff;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: rgba(255, 255, 255, 0.25);
+      transition: text-decoration-color 0.12s ease, color 0.12s ease;
+    }
+
+    .tld-check-btn:hover {
+      color: #39ff14;
+      text-decoration-color: rgba(57, 255, 20, 0.45);
+    }
+
+    .tld-guide-faq {
+      margin-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .tld-guide-faq details {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0.625rem;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.875rem 1rem;
+    }
+
+    .tld-guide-faq summary {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #ffffff;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .tld-guide-faq summary::-webkit-details-marker { display: none; }
+
+    .tld-guide-faq p {
+      margin: 0.75rem 0 0;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased bg-app text-text">
+  <header class="shrink-0 text-center px-4 sm:px-6 pt-8 sm:pt-10 max-w-4xl mx-auto w-full">
+    <h1 class="text-5xl sm:text-6xl lg:text-7xl xl:text-[5.5rem] font-extrabold tracking-tight text-white leading-none mb-4 text-center">
+      Anti-Frontrunner
+    </h1>
+    <p class="text-base sm:text-lg text-muted font-normal leading-snug max-w-xl mx-auto">
+      Privacy-first domain search. Queries run in your browser&mdash;never our servers.
+    </p>
+  </header>
+
+  <main class="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 w-full min-h-0 py-6 sm:py-8">
+    <section id="search-panel" class="w-full max-w-2xl flex flex-col" aria-label="Domain search">
+      <div id="search-shell" class="search-shell rounded-2xl overflow-visible">
+        <div id="region-bar" class="flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 border-b border-white/[0.06] text-xs text-dim">
+          <span id="region-label">TLD priority</span>
+          <label class="flex items-center gap-2 shrink-0">
+            <span class="sr-only">TLD priority region</span>
+            <select id="region-select" class="bg-white/5 border border-white/10 rounded-md text-white text-xs py-1 pl-2 pr-7 cursor-pointer focus:border-white/25">
+            </select>
+          </label>
+        </div>
+        <div class="search-bar relative flex items-center min-h-[3.75rem] sm:min-h-[4rem] border-b border-white/[0.06]">
+          <svg class="shrink-0 w-5 h-5 ml-4 sm:ml-5 text-dim pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3" stroke-linecap="round"/>
+          </svg>
+          <input
+            id="search-input"
+            type="text"
+            inputmode="text"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            autocomplete="off"
+            aria-label="Search domain name"
+            aria-controls="results-panel"
+            placeholder="Search a name or domain…"
+            class="w-full bg-transparent text-white text-lg sm:text-xl font-semibold placeholder:text-dim placeholder:font-normal pl-3 pr-36 sm:pr-40 py-4"
+          />
+          <span
+            id="com-status"
+            class="absolute right-[4.75rem] sm:right-[5.25rem] text-xs font-semibold text-dim pointer-events-none select-none hidden"
+            aria-live="polite"
+          ></span>
+          <button
+            id="search-clear"
+            type="button"
+            class="absolute right-[3.25rem] sm:right-[3.75rem] hidden items-center justify-center w-6 h-6 rounded-full bg-white/10 text-muted hover:text-white hover:bg-white/15 transition-colors"
+            aria-label="Clear search"
+          >
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+          </button>
+          <button
+            id="search-submit"
+            type="submit"
+            class="search-submit absolute right-3 sm:right-4 flex items-center justify-center w-7 h-7 rounded-md"
+            aria-label="Search domains"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7"/>
+            </svg>
+          </button>
+        </div>
+
+        <div id="results-panel" class="results-panel" aria-hidden="true">
+          <div class="results-panel-inner">
+            <ul id="results-list" class="divide-y divide-white/[0.06]"></ul>
+          </div>
+        </div>
+      </div>
+
+      <p id="dns-disclaimer" class="hidden text-center text-[0.6875rem] sm:text-xs text-dim/80 mt-2.5 mb-0">
+        DNS-based estimate&mdash;confirm at checkout.
+      </p>
+
+      <div class="privacy-cards" aria-label="Privacy and search architecture">
+        <ol class="grid gap-3 sm:grid-cols-3 sm:gap-4 list-none m-0 p-0">
+          <li class="rounded-xl border border-white/[0.06] bg-black/30 px-4 py-3.5">
+            <h2 class="text-base font-semibold text-white mb-1.5">Your search stays on your device</h2>
+            <p class="text-sm sm:text-[0.9375rem] leading-relaxed text-dim m-0">Most domain tools send your ideas to a server that can keep a record. Anti-Frontrunner doesn&rsquo;t&mdash;lookups run in your browser and we never see what you type.</p>
+          </li>
+          <li class="rounded-xl border border-white/[0.06] bg-black/30 px-4 py-3.5">
+            <h2 class="text-base font-semibold text-white mb-1.5">No sniping your names</h2>
+            <p class="text-sm sm:text-[0.9375rem] leading-relaxed text-dim m-0">We check availability through public DNS, not registrar systems. Sellers only enter the picture when you hit Register.</p>
+          </li>
+          <li class="rounded-xl border border-white/[0.06] bg-black/30 px-4 py-3.5">
+            <h2 class="text-base font-semibold text-white mb-1.5">Real DNS, not guesswork</h2>
+            <p class="text-sm sm:text-[0.9375rem] leading-relaxed text-dim m-0">Your browser asks Cloudflare and Google directly whether a name is taken&mdash;across 16 popular endings, with no Anti-Frontrunner server in the middle.</p>
+          </li>
+        </ol>
+      </div>
+
+      <section id="tld-guide" class="tld-guide" aria-labelledby="tld-guide-heading">
+        <h2 id="tld-guide-heading" class="text-base sm:text-lg font-semibold text-white mb-3">Extensions Anti-Frontrunner checks</h2>
+        <p class="tld-guide-intro">
+          Anti-Frontrunner looks up all 16 endings below in one search&mdash;from your browser via public DNS, never our servers.
+          &ldquo;Available&rdquo; means no DNS record was found; always confirm price and registration at checkout.
+        </p>
+        <div class="tld-guide-table-wrap">
+          <table class="tld-guide-table">
+            <caption>Sixteen domain extensions checked by Anti-Frontrunner: extension, typical use, and how to read DNS-based availability.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Extension</th>
+                <th scope="col">Best for</th>
+                <th scope="col">What to know</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="tld-guide-body"></tbody>
+          </table>
+        </div>
+        <div class="tld-guide-faq" aria-label="Domain search FAQ">
+          <details>
+            <summary>What does &ldquo;available&rdquo; mean?</summary>
+            <p>It means Cloudflare or Google DNS returned no record for that name&mdash;a signal the domain may be unregistered. Parked, premium, or reserved names can still show as available or taken incorrectly. Treat results as estimates.</p>
+          </details>
+          <details>
+            <summary>Why DNS instead of registrar search?</summary>
+            <p>Registrar lookups run on someone else&rsquo;s server and can log what you type. DNS queries leave your device directly; Anti-Frontrunner never sees your keywords. The tradeoff is accuracy versus privacy.</p>
+          </details>
+          <details>
+            <summary>Does Anti-Frontrunner log my searches?</summary>
+            <p>No. There is no Anti-Frontrunner backend. Queries go to public DNS resolvers; your region preference is the only setting stored locally in your browser.</p>
+          </details>
+          <details>
+            <summary>Can I check a single extension?</summary>
+            <p>Yes. Type a full domain like <span class="font-mono text-white/80">yourname.ai</span> in the search bar, or pick an extension below and we&rsquo;ll scroll you back to search with TLD priority adjusted where it helps.</p>
+          </details>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="shrink-0 w-full max-w-2xl mx-auto px-4 pt-8 pb-8 mt-4 border-t border-white/[0.06] text-center space-y-4">
+    <p class="text-sm sm:text-[0.9375rem] text-muted max-w-xl mx-auto leading-relaxed">
+      Anti-Frontrunner is <a class="footer-link underline underline-offset-2" href="https://github.com/michaelssen/anti-frontrunner" target="_blank" rel="noopener noreferrer">open source</a> and runs entirely in your browser&mdash;we don&rsquo;t operate a search backend, so your searches can&rsquo;t be logged, front-run, or stolen.
+    </p>
+    <p class="text-xs sm:text-sm text-dim max-w-xl mx-auto leading-relaxed">
+      To keep this tool free, Register links are affiliate links. If you buy through a partner like Namecheap, we may earn a small commission at no extra cost to you.
+    </p>
+    <p class="font-mono text-[0.625rem] sm:text-[0.6875rem] text-dim/70 max-w-2xl mx-auto leading-relaxed">
+      Eight TLD checks via Cloudflare DoH, eight via Google DoH&mdash;all from your device, never our servers.
+    </p>
+    <p class="text-xs text-dim/80">
+      <a class="footer-link" href="https://github.com/michaelssen/anti-frontrunner" target="_blank" rel="noopener noreferrer">Source</a>
+      <span aria-hidden="true"> · </span>
+      <a class="footer-link" href="privacy.html">Privacy</a>
+    </p>
+  </footer>
+
+  <script type="module">
+    /** @typedef {'idle' | 'checking' | 'available' | 'taken' | 'error'} DomainStatus */
+    /** @typedef {'keyword' | 'explicit'} SearchMode */
+    /** @typedef {'cloudflare' | 'google'} DoHProvider */
+    /** @typedef {'global' | 'us' | 'uk' | 'de' | 'cn'} RegionId */
+    /** @typedef {{ domain: string, status: DomainStatus, tld: string }} VariantState */
+
+    const CF_DOH = 'https://cloudflare-dns.com/dns-query';
+    const GOOGLE_DOH = 'https://dns.google/resolve';
+    const COM_DEBOUNCE_MS = 150;
+    const TLD_DEBOUNCE_MS = 400;
+    const SUBMIT_LOCK_MS = 1500;
+    const REGION_STORAGE_KEY = 'ninejack-region';
+
+    /** @param {string} value @returns {string} */
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    const EXPLICIT_DOMAIN_RE = /^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.([a-z]{2,63})$/;
+
+    /** @type {string[]} */
+    const ALL_TLDS = [
+      'com', 'org', 'net', 'co', 'ai', 'io', 'de', 'uk',
+      'org.uk', 'cn', 'xyz', 'shop', 'store', 'app', 'online', 'info',
+    ];
+
+    /** @type {string[]} */
+    const CORE_TLDS = ['com', 'org', 'net', 'io', 'co', 'ai', 'app'];
+
+    /** @type {Record<RegionId, { label: string, priority: string[] }>} */
+    const REGION_PRESETS = {
+      global: { label: 'Global', priority: [] },
+      us: { label: 'United States', priority: ['com', 'net', 'org', 'co', 'online', 'store'] },
+      uk: { label: 'United Kingdom', priority: ['uk', 'org.uk', 'co', 'io', 'com'] },
+      de: { label: 'Germany', priority: ['de', 'com', 'net', 'org', 'online', 'info'] },
+      cn: { label: 'China', priority: ['cn', 'com', 'net', 'org', 'online', 'xyz'] },
+    };
+
+    /** @type {Record<string, { bestFor: string, notes: string, regionHint?: RegionId }>} */
+    const TLD_GUIDE = {
+      com: {
+        bestFor: 'Global brands & businesses',
+        notes: 'The default choice worldwide. High demand—DNS may show available while a registrar marks it premium.',
+      },
+      org: {
+        bestFor: 'Nonprofits, communities, open projects',
+        notes: 'Trusted for mission-driven sites. Some registrars verify eligibility; DNS cannot detect that.',
+      },
+      net: {
+        bestFor: 'Networks, infrastructure, tech fallback',
+        notes: 'Common when .com is taken. Behaves like a general-purpose legacy extension.',
+      },
+      co: {
+        bestFor: 'Startups, brands, Colombia/global shorthand',
+        notes: 'Popular startup alternative to .com. Often priced as a premium TLD at checkout.',
+      },
+      ai: {
+        bestFor: 'AI products, ML startups, tech brands',
+        notes: 'High interest category; many short names are taken or premium despite empty DNS.',
+      },
+      io: {
+        bestFor: 'Developer tools, SaaS, tech startups',
+        notes: 'Developer-friendly reputation. Premium pricing is common for short names.',
+      },
+      de: {
+        bestFor: 'Germany & DACH audiences',
+        notes: 'Country code; strong local trust. DNS does not verify residency requirements.',
+        regionHint: 'de',
+      },
+      uk: {
+        bestFor: 'United Kingdom businesses & creators',
+        notes: 'UK country code. Some names require local presence at registrars—DNS will not show that.',
+        regionHint: 'uk',
+      },
+      'org.uk': {
+        bestFor: 'UK nonprofits & community groups',
+        notes: 'Restricted namespace in practice; confirm registrar rules even if DNS looks open.',
+        regionHint: 'uk',
+      },
+      cn: {
+        bestFor: 'China-facing brands & markets',
+        notes: 'Country code with registry-specific policies. Availability at DNS ≠ registrable for everyone.',
+        regionHint: 'cn',
+      },
+      xyz: {
+        bestFor: 'Experimental brands, creatives, low-cost projects',
+        notes: 'Often inexpensive; higher spam reputation on some filters—fine for the right brand.',
+      },
+      shop: {
+        bestFor: 'E-commerce & retail brands',
+        notes: 'Retail-focused gTLD. Good when the .com is gone; check renewal pricing.',
+      },
+      store: {
+        bestFor: 'Online stores & marketplaces',
+        notes: 'Similar to .shop; useful for product-led brands. Confirm at registrar.',
+      },
+      app: {
+        bestFor: 'Mobile apps, software products',
+        notes: 'Google-operated; HTTPS required for live sites. DNS check ignores HTTPS policy.',
+      },
+      online: {
+        bestFor: 'Broad commercial & personal sites',
+        notes: 'Generic and widely available; less memorability than .com.',
+      },
+      info: {
+        bestFor: 'Informational sites & content hubs',
+        notes: 'Legacy gTLD; fine for content-heavy sites when .com is unavailable.',
+      },
+    };
+
+    const AFFILIATE_IDS = {
+      namecheap: 'YOUR_IMPACT_ID',
+      namesilo: 'YOUR_NAMESILO_RID',
+      porkbun: 'YOUR_PORKBUN_AFFILIATE_ID',
+    };
+
+    /** @typedef {'namecheap' | 'porkbun' | 'namesilo' | 'godaddy' | 'spaceship' | 'domaincom' | 'hostinger' | 'networksolutions'} RegistrarId */
+
+    /** @type {{ id: RegistrarId, name: string, affiliate: boolean }[]} */
+    const REGISTRARS = [
+      { id: 'namecheap', name: 'Namecheap', affiliate: true },
+      { id: 'porkbun', name: 'Porkbun', affiliate: true },
+      { id: 'namesilo', name: 'NameSilo', affiliate: true },
+      { id: 'godaddy', name: 'GoDaddy', affiliate: false },
+      { id: 'spaceship', name: 'Spaceship', affiliate: false },
+      { id: 'domaincom', name: 'Domain.com', affiliate: false },
+      { id: 'hostinger', name: 'Hostinger', affiliate: false },
+      { id: 'networksolutions', name: 'Network Solutions', affiliate: false },
+    ];
+
+    /** @type {{ query: string, mode: SearchMode, comStatus: DomainStatus, variants: VariantState[], explicitDomain: string, region: RegionId }} */
+    const state = {
+      query: '',
+      mode: 'keyword',
+      comStatus: 'idle',
+      variants: [],
+      explicitDomain: '',
+      region: 'global',
+    };
+
+    let comDebounceTimer = 0;
+    let tldDebounceTimer = 0;
+    let comRequestId = 0;
+    let tldRequestId = 0;
+    let submitLockGeneration = 0;
+    /** @type {AbortController | null} */
+    let comAbort = null;
+    /** @type {AbortController | null} */
+    let tldAbort = null;
+
+    const searchShell = document.getElementById('search-shell');
+    const searchInput = document.getElementById('search-input');
+    const searchSubmit = document.getElementById('search-submit');
+    const searchClear = document.getElementById('search-clear');
+    const comStatusEl = document.getElementById('com-status');
+    const resultsPanel = document.getElementById('results-panel');
+    const resultsList = document.getElementById('results-list');
+    const regionLabel = document.getElementById('region-label');
+    const regionSelect = document.getElementById('region-select');
+    const dnsDisclaimer = document.getElementById('dns-disclaimer');
+    const tldGuideBody = document.getElementById('tld-guide-body');
+    const tldGuideSection = document.getElementById('tld-guide');
+
+    /** @param {string} tld @returns {{ bestFor: string, notes: string, regionHint?: RegionId }} */
+    function getTldGuideMeta(tld) {
+      return TLD_GUIDE[tld] || {
+        bestFor: 'General use',
+        notes: 'Checked via DNS from your browser. Confirm availability at checkout.',
+      };
+    }
+
+    function renderTldGuide() {
+      if (!(tldGuideBody instanceof HTMLElement)) return;
+      tldGuideBody.innerHTML = ALL_TLDS.map((tld) => {
+        const meta = getTldGuideMeta(tld);
+        const safeTld = escapeHtml(tld);
+        return `
+          <tr>
+            <td><span class="tld-guide-ext">.${safeTld}</span></td>
+            <td>${escapeHtml(meta.bestFor)}</td>
+            <td>${escapeHtml(meta.notes)}</td>
+            <td>
+              <button type="button" class="tld-check-btn" data-tld="${safeTld}">Check .${safeTld}</button>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    /** @param {string} tld */
+    function focusSearchForTld(tld) {
+      const meta = getTldGuideMeta(tld);
+      if (meta.regionHint && meta.regionHint !== state.region) {
+        setRegion(meta.regionHint);
+      }
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      searchShell?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+
+      if (searchInput instanceof HTMLInputElement) {
+        searchShell?.classList.add('is-focused');
+        searchInput.focus({ preventScroll: true });
+      }
+    }
+
+    function initTldGuide() {
+      renderTldGuide();
+      tldGuideSection?.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const btn = target.closest('.tld-check-btn');
+        if (!(btn instanceof HTMLButtonElement) || !btn.dataset.tld) return;
+        event.preventDefault();
+        focusSearchForTld(btn.dataset.tld);
+      });
+    }
+
+    /**
+     * Build affiliate or direct registrar URL with domain query parameter.
+     * @param {RegistrarId} registrar
+     * @param {string} domain
+     * @returns {string}
+     */
+    function buildAffiliateUrl(registrar, domain) {
+      const encoded = encodeURIComponent(domain);
+
+      if (registrar === 'namecheap') {
+        const destination = `https://www.namecheap.com/domains/registration/results.aspx?domain=${encoded}`;
+        const affiliateId = AFFILIATE_IDS.namecheap;
+        if (affiliateId && affiliateId !== 'YOUR_IMPACT_ID') {
+          return `https://namecheap.pxf.io/c/${affiliateId}/386170/5618?u=${encodeURIComponent(destination)}`;
+        }
+        return destination;
+      }
+
+      if (registrar === 'porkbun') {
+        const url = new URL('https://porkbun.com/checkout/search');
+        url.searchParams.set('q', domain);
+        const affiliateId = AFFILIATE_IDS.porkbun;
+        if (affiliateId && affiliateId !== 'YOUR_PORKBUN_AFFILIATE_ID') {
+          url.searchParams.set('aff', affiliateId);
+        }
+        return url.toString();
+      }
+
+      if (registrar === 'namesilo') {
+        const url = new URL('https://www.namesilo.com/domain/search-domains');
+        url.searchParams.set('query', domain);
+        const affiliateId = AFFILIATE_IDS.namesilo;
+        if (affiliateId && affiliateId !== 'YOUR_NAMESILO_RID') {
+          url.searchParams.set('rid', affiliateId);
+        }
+        return url.toString();
+      }
+
+      if (registrar === 'godaddy') {
+        return `https://www.godaddy.com/domainsearch/find?domainToCheck=${encoded}`;
+      }
+
+      if (registrar === 'spaceship') {
+        return `https://www.spaceship.com/domain-search/?query=${encoded}`;
+      }
+
+      if (registrar === 'domaincom') {
+        return `https://www.domain.com/registration/?flow=domain&domain=${encoded}`;
+      }
+
+      if (registrar === 'hostinger') {
+        return `https://www.hostinger.com/domain-name-results?domain=${encoded}`;
+      }
+
+      return `https://www.networksolutions.com/domain-name-registration/domain-search-results.jsp?searchDomain=${encoded}`;
+    }
+
+    /** @returns {RegionId} */
+    function detectRegionFromLocale() {
+      const langs = navigator.languages?.length ? navigator.languages : [navigator.language];
+      for (const lang of langs) {
+        const code = String(lang).toLowerCase();
+        if (code.startsWith('en-gb') || code === 'en-gb') return 'uk';
+        if (code.startsWith('de')) return 'de';
+        if (code.startsWith('zh')) return 'cn';
+        if (code.startsWith('en-us') || code === 'en-us') return 'us';
+      }
+      return 'global';
+    }
+
+    /** @param {RegionId} region @returns {string[]} */
+    function getOrderedTlds(region) {
+      const preset = REGION_PRESETS[region] || REGION_PRESETS.global;
+      /** @type {string[]} */
+      const ordered = [];
+      const seen = new Set();
+
+      const push = (/** @type {string} */ tld) => {
+        if (!ALL_TLDS.includes(tld) || seen.has(tld)) return;
+        ordered.push(tld);
+        seen.add(tld);
+      };
+
+      push('com');
+      for (const tld of preset.priority) push(tld);
+      for (const tld of CORE_TLDS) push(tld);
+      for (const tld of ALL_TLDS) push(tld);
+
+      return ordered.slice(0, ALL_TLDS.length);
+    }
+
+    /** @param {string} value @returns {string} */
+    function cleanInput(value) {
+      let cleaned = value.trim().toLowerCase();
+      cleaned = cleaned.replace(/^https:\/\//, '').replace(/^http:\/\//, '');
+      cleaned = cleaned.replace(/^www\./, '');
+      cleaned = cleaned.replace(/\/+$/, '');
+      return cleaned.split('/')[0];
+    }
+
+    /**
+     * @param {string} cleaned
+     * @returns {{ mode: SearchMode, keyword?: string, domain?: string }}
+     */
+    function parseSearchInput(cleaned) {
+      if (!cleaned) return { mode: 'keyword', keyword: '' };
+      if (EXPLICIT_DOMAIN_RE.test(cleaned)) return { mode: 'explicit', domain: cleaned };
+      const keyword = cleaned.replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, '');
+      return { mode: 'keyword', keyword };
+    }
+
+    /** @param {string} keyword @returns {boolean} */
+    function isPlausibleKeyword(keyword) {
+      if (!keyword || keyword.length > 63) return false;
+      return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(keyword);
+    }
+
+    /** @param {string} keyword @returns {VariantState[]} */
+    function buildKeywordVariants(keyword) {
+      return getOrderedTlds(state.region).map((tld) => ({
+        domain: `${keyword}.${tld}`,
+        status: /** @type {DomainStatus} */ ('checking'),
+        tld,
+      }));
+    }
+
+    /**
+     * @param {string} domain
+     * @param {AbortSignal} signal
+     * @param {DoHProvider} provider
+     * @returns {Promise<DomainStatus>}
+     */
+    async function checkDomainAvailability(domain, signal, provider) {
+      if (provider === 'cloudflare') {
+        const url = new URL(CF_DOH);
+        url.searchParams.set('name', domain);
+        url.searchParams.set('type', 'A');
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: { Accept: 'application/dns-json' },
+          signal,
+        });
+        if (!response.ok) throw new Error(`Cloudflare DoH failed (${response.status})`);
+        /** @type {{ Status: number }} */
+        const data = await response.json();
+        return data.Status === 3 ? 'available' : 'taken';
+      }
+
+      const url = new URL(GOOGLE_DOH);
+      url.searchParams.set('name', domain);
+      url.searchParams.set('type', 'A');
+      const response = await fetch(url.toString(), { method: 'GET', signal });
+      if (!response.ok) throw new Error(`Google DoH failed (${response.status})`);
+      /** @type {{ Status: number }} */
+      const data = await response.json();
+      return data.Status === 3 ? 'available' : 'taken';
+    }
+
+    /** @param {boolean} locked */
+    function setSubmitLocked(locked) {
+      if (!(searchSubmit instanceof HTMLButtonElement)) return;
+      searchSubmit.disabled = locked;
+      searchSubmit.classList.toggle('is-searching', locked);
+    }
+
+    function cancelPendingChecks() {
+      clearTimeout(comDebounceTimer);
+      clearTimeout(tldDebounceTimer);
+      if (comAbort) { comAbort.abort(); comAbort = null; }
+      if (tldAbort) { tldAbort.abort(); tldAbort = null; }
+    }
+
+    function updateClearButton() {
+      if (!(searchClear instanceof HTMLButtonElement)) return;
+      const hasValue = Boolean(state.query.trim());
+      searchClear.classList.toggle('hidden', !hasValue);
+      searchClear.classList.toggle('flex', hasValue);
+    }
+
+    function setResultsVisible(visible) {
+      if (resultsPanel instanceof HTMLElement) {
+        resultsPanel.classList.toggle('is-visible', visible);
+        resultsPanel.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      }
+      if (dnsDisclaimer instanceof HTMLElement) {
+        dnsDisclaimer.classList.toggle('hidden', !visible);
+      }
+    }
+
+    function updateRegionUi() {
+      if (!(regionSelect instanceof HTMLSelectElement)) return;
+      regionSelect.innerHTML = Object.entries(REGION_PRESETS)
+        .map(([id, preset]) => `<option value="${id}"${id === state.region ? ' selected' : ''}>${preset.label}</option>`)
+        .join('');
+      if (regionLabel instanceof HTMLElement) {
+        const detected = detectRegionFromLocale();
+        const hint = state.region === detected && !localStorage.getItem(REGION_STORAGE_KEY)
+          ? ' (from your browser language)'
+          : '';
+        regionLabel.textContent = `TLD priority: ${REGION_PRESETS[state.region].label}${hint}`;
+      }
+    }
+
+    function showInstantFeedback() {
+      const parsed = parseSearchInput(state.query);
+      state.mode = parsed.mode;
+
+      if (!state.query.trim()) {
+        state.comStatus = 'idle';
+        state.explicitDomain = '';
+        renderComStatus();
+        setResultsVisible(false);
+        return;
+      }
+
+      if (parsed.mode === 'explicit' && parsed.domain) {
+        state.explicitDomain = parsed.domain;
+        state.comStatus = 'checking';
+      } else if (isPlausibleKeyword(parsed.keyword || '')) {
+        state.explicitDomain = '';
+        state.comStatus = 'checking';
+      } else {
+        state.comStatus = 'error';
+      }
+
+      renderComStatus();
+      setResultsVisible(true);
+    }
+
+    function renderComStatus() {
+      if (!(comStatusEl instanceof HTMLElement)) return;
+
+      if (state.mode === 'explicit') {
+        if (!state.explicitDomain || state.comStatus === 'idle') {
+          comStatusEl.className = 'absolute right-[4.75rem] sm:right-[5.25rem] text-xs font-semibold text-dim pointer-events-none select-none hidden';
+          comStatusEl.textContent = '';
+          return;
+        }
+        comStatusEl.classList.remove('hidden');
+        const map = {
+          checking: ['checking…', 'text-checking checking-dot'],
+          available: ['available', 'com-badge-available'],
+          taken: ['taken', 'text-taken'],
+          error: ['error', 'text-dim'],
+        };
+        const [text, cls] = map[state.comStatus] || ['', 'text-dim'];
+        comStatusEl.textContent = text;
+        comStatusEl.className = `absolute right-[4.75rem] sm:right-[5.25rem] text-xs font-semibold pointer-events-none select-none ${cls}`;
+        return;
+      }
+
+      const parsed = parseSearchInput(state.query);
+      const keyword = parsed.keyword || '';
+      if (!keyword || !isPlausibleKeyword(keyword)) {
+        comStatusEl.textContent = '';
+        comStatusEl.className = 'absolute right-[4.75rem] sm:right-[5.25rem] text-xs font-semibold text-dim pointer-events-none select-none hidden';
+        return;
+      }
+
+      comStatusEl.classList.remove('hidden');
+      if (state.comStatus === 'checking') {
+        comStatusEl.textContent = '.com …';
+        comStatusEl.className = 'absolute right-[4.75rem] sm:right-[5.25rem] text-xs font-semibold text-checking pointer-events-none select-none checking-dot';
+      } else if (state.comStatus === 'available') {
+        comStatusEl.textContent = '.com ✓';
+        comStatusEl.className = 'absolute right-[4.75rem] sm:right-[5.25rem] text-xs font-semibold com-badge-available pointer-events-none select-none';
+      } else if (state.comStatus === 'taken') {
+        comStatusEl.textContent = '.com ✗';
+        comStatusEl.className = 'absolute right-[4.75rem] sm:right-[5.25rem] text-xs font-semibold text-taken pointer-events-none select-none';
+      } else {
+        comStatusEl.textContent = '.com !';
+        comStatusEl.className = 'absolute right-[4.75rem] sm:right-[5.25rem] text-xs font-semibold text-dim pointer-events-none select-none';
+      }
+    }
+
+    /** @param {DomainStatus} status @returns {number} */
+    function statusSortRank(status) {
+      if (status === 'available') return 0;
+      if (status === 'checking') return 1;
+      if (status === 'taken') return 2;
+      if (status === 'error') return 3;
+      return 4;
+    }
+
+    /** @param {VariantState[]} variants @returns {VariantState[]} */
+    function sortVariantsForDisplay(variants) {
+      const tldOrder = getOrderedTlds(state.region);
+      return [...variants].sort((a, b) => {
+        const rankDiff = statusSortRank(a.status) - statusSortRank(b.status);
+        if (rankDiff !== 0) return rankDiff;
+        return tldOrder.indexOf(a.tld) - tldOrder.indexOf(b.tld);
+      });
+    }
+
+    /** @param {string} query */
+    function syncUrlQuery(query) {
+      const url = new URL(window.location.href);
+      const trimmed = query.trim();
+      if (trimmed) url.searchParams.set('q', trimmed);
+      else url.searchParams.delete('q');
+      window.history.replaceState(null, '', url);
+    }
+
+    /** @param {string} domain @param {DoHProvider} provider */
+    async function checkSingleDomain(domain, provider) {
+      const controller = new AbortController();
+      try {
+        return await checkDomainAvailability(domain, controller.signal, provider);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return 'error';
+        return 'error';
+      }
+    }
+
+    /** @param {string} domain */
+    async function retryDomain(domain) {
+      const variant = state.variants.find((v) => v.domain === domain);
+      if (!variant) return;
+
+      variant.status = 'checking';
+      if (state.mode === 'explicit' || variant.tld === 'com') {
+        state.comStatus = 'checking';
+        renderComStatus();
+      }
+      renderResults();
+
+      const index = state.variants.findIndex((v) => v.domain === domain);
+      const half = Math.max(1, Math.ceil(state.variants.length / 2));
+      const provider = index < half ? 'cloudflare' : 'google';
+      const status = await checkSingleDomain(domain, provider);
+
+      variant.status = status;
+      if (state.mode === 'explicit' || variant.tld === 'com') {
+        state.comStatus = status;
+        renderComStatus();
+      }
+      renderResults();
+    }
+
+    /**
+     * @param {string} domain
+     * @param {HTMLButtonElement} button
+     */
+    async function copyDomain(domain, button) {
+      try {
+        await navigator.clipboard.writeText(domain);
+      } catch {
+        const textarea = document.createElement('textarea');
+        textarea.value = domain;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+
+      button.classList.add('is-copied');
+      button.setAttribute('aria-label', 'Copied');
+      window.setTimeout(() => {
+        button.classList.remove('is-copied');
+        button.setAttribute('aria-label', `Copy ${domain}`);
+      }, 1500);
+    }
+
+    /** @param {string} domain @returns {string} */
+    function renderCopyButton(domain) {
+      const safe = escapeHtml(domain);
+      return `
+        <button
+          type="button"
+          class="copy-domain-btn inline-flex items-center justify-center w-7 h-7 rounded-md text-dim hover:text-white hover:bg-white/10 transition-colors"
+          data-domain="${safe}"
+          aria-label="Copy ${safe}"
+          title="Copy domain"
+        >
+          <svg class="w-3.5 h-3.5 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        </button>`;
+    }
+
+    /** @param {string} domain @returns {string} */
+    function renderRegisterDropdown(domain) {
+      const options = REGISTRARS.map((registrar) => {
+        const tag = registrar.affiliate
+          ? '<span class="register-option-tag">affiliate</span>'
+          : '';
+        return `<a class="register-option" href="${buildAffiliateUrl(registrar.id, domain)}" target="_blank" rel="noopener noreferrer sponsored"><span>${registrar.name}</span>${tag}</a>`;
+      }).join('');
+
+      return `
+        <details class="register-details relative">
+          <summary class="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-black cursor-pointer select-none hover:bg-neutral-200 transition-colors">
+            Register
+            <svg class="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="register-menu" role="menu">${options}</div>
+        </details>`;
+    }
+
+    /** @param {VariantState} variant @returns {string} */
+    function renderStatusLabel(variant) {
+      const { status, domain } = variant;
+      if (status === 'available') {
+        return '<span class="text-xs font-medium text-neon">Available</span>';
+      }
+      if (status === 'taken') {
+        return '<span class="text-xs font-medium text-taken">Unavailable</span>';
+      }
+      if (status === 'checking') {
+        return '<span class="text-xs font-medium text-checking checking-dot">Checking…</span>';
+      }
+      return `<button type="button" class="retry-domain-btn text-xs font-medium text-dim hover:text-white transition-colors" data-domain="${escapeHtml(domain)}">Retry</button>`;
+    }
+
+    /** @param {VariantState} variant @returns {string} */
+    function renderResultRow(variant) {
+      const { domain, status } = variant;
+      const nameClass = status === 'available'
+        ? 'domain-available font-semibold'
+        : status === 'taken'
+          ? 'domain-taken font-medium'
+          : 'text-white font-medium';
+
+      const register = status === 'available' ? renderRegisterDropdown(domain) : '';
+      const safeDomain = escapeHtml(domain);
+
+      return `
+        <li class="result-row flex items-center justify-between gap-4 px-4 sm:px-5 py-3.5" data-domain="${safeDomain}">
+          <span class="truncate text-sm sm:text-base ${nameClass}">${safeDomain}</span>
+          <div class="flex items-center gap-2 shrink-0">
+            ${renderCopyButton(domain)}
+            ${renderStatusLabel(variant)}
+            ${register}
+          </div>
+        </li>`;
+    }
+
+    function renderResults() {
+      if (!(resultsList instanceof HTMLElement)) return;
+
+      if (!state.query.trim()) {
+        resultsList.innerHTML = '';
+        setResultsVisible(false);
+        return;
+      }
+
+      if (state.mode === 'explicit') {
+        const domain = state.explicitDomain;
+        const variant = state.variants[0] || { domain, status: 'checking', tld: '' };
+        resultsList.innerHTML = renderResultRow(variant);
+        setResultsVisible(true);
+        return;
+      }
+
+      const parsed = parseSearchInput(state.query);
+      if (!isPlausibleKeyword(parsed.keyword || '')) {
+        resultsList.innerHTML = '<li class="px-4 sm:px-5 py-8 text-sm text-dim text-center">Enter a valid keyword to search popular TLDs</li>';
+        setResultsVisible(true);
+        return;
+      }
+
+      if (!state.variants.length) {
+        resultsList.innerHTML = '<li class="px-4 sm:px-5 py-8 text-sm text-checking checking-dot text-center">Checking domains…</li>';
+      } else {
+        resultsList.innerHTML = sortVariantsForDisplay(state.variants).map(renderResultRow).join('');
+      }
+
+      setResultsVisible(true);
+      updateRegionUi();
+    }
+
+    /** @param {string} domain @param {DomainStatus} status */
+    function updateResultRowInDom(domain, status) {
+      const variant = state.variants.find((v) => v.domain === domain);
+      if (variant) variant.status = status;
+      if (variant?.tld === 'com') {
+        state.comStatus = status;
+        renderComStatus();
+      }
+      renderResults();
+    }
+
+    /**
+     * @param {VariantState[]} variants
+     * @param {AbortSignal} signal
+     * @param {number} requestId
+     */
+    async function resolveVariantGroups(variants, signal, requestId) {
+      const half = Math.ceil(variants.length / 2);
+      const cloudflareGroup = variants.slice(0, half);
+      const googleGroup = variants.slice(half);
+
+      await Promise.all([
+        Promise.all(
+          cloudflareGroup.map(async (variant) => {
+            const index = variants.findIndex((v) => v.domain === variant.domain);
+            try {
+              const status = await checkDomainAvailability(variant.domain, signal, 'cloudflare');
+              if (tldRequestId !== requestId) return;
+              variants[index] = { ...variant, status };
+              updateResultRowInDom(variant.domain, status);
+              if (variant.tld === 'com') {
+                state.comStatus = status;
+                renderComStatus();
+              }
+            } catch (error) {
+              if (error instanceof DOMException && error.name === 'AbortError') return;
+              if (tldRequestId !== requestId) return;
+              variants[index] = { ...variant, status: 'error' };
+              updateResultRowInDom(variant.domain, 'error');
+            }
+          })
+        ),
+        Promise.all(
+          googleGroup.map(async (variant) => {
+            const index = variants.findIndex((v) => v.domain === variant.domain);
+            try {
+              const status = await checkDomainAvailability(variant.domain, signal, 'google');
+              if (tldRequestId !== requestId) return;
+              variants[index] = { ...variant, status };
+              updateResultRowInDom(variant.domain, status);
+              if (variant.tld === 'com') {
+                state.comStatus = status;
+                renderComStatus();
+              }
+            } catch (error) {
+              if (error instanceof DOMException && error.name === 'AbortError') return;
+              if (tldRequestId !== requestId) return;
+              variants[index] = { ...variant, status: 'error' };
+              updateResultRowInDom(variant.domain, 'error');
+            }
+          })
+        ),
+      ]);
+    }
+
+    async function runComCheck() {
+      const parsed = parseSearchInput(state.query);
+      state.mode = parsed.mode;
+
+      if (!state.query.trim()) {
+        state.comStatus = 'idle';
+        state.explicitDomain = '';
+        renderComStatus();
+        renderResults();
+        return;
+      }
+
+      const keyword = parsed.keyword || '';
+      if (parsed.mode === 'keyword' && !isPlausibleKeyword(keyword)) {
+        state.comStatus = 'error';
+        renderComStatus();
+        renderResults();
+        return;
+      }
+
+      if (parsed.mode === 'explicit') {
+        return;
+      }
+
+      const requestId = comRequestId + 1;
+      comRequestId = requestId;
+      if (comAbort) comAbort.abort();
+      const controller = new AbortController();
+      comAbort = controller;
+
+      state.explicitDomain = '';
+      state.comStatus = 'checking';
+      renderComStatus();
+
+      try {
+        const status = await checkDomainAvailability(`${keyword}.com`, controller.signal, 'cloudflare');
+        if (comRequestId !== requestId) return;
+        state.comStatus = status;
+        renderComStatus();
+        updateResultRowInDom(`${keyword}.com`, status);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (comRequestId !== requestId) return;
+        state.comStatus = 'error';
+        renderComStatus();
+      }
+    }
+
+    async function runTldCheck() {
+      const parsed = parseSearchInput(state.query);
+
+      if (!state.query.trim()) {
+        state.variants = [];
+        renderResults();
+        return;
+      }
+
+      if (parsed.mode === 'explicit' && parsed.domain) {
+        const requestId = tldRequestId + 1;
+        tldRequestId = requestId;
+        if (tldAbort) tldAbort.abort();
+        const controller = new AbortController();
+        tldAbort = controller;
+
+        state.explicitDomain = parsed.domain;
+        state.comStatus = 'checking';
+        state.variants = [{ domain: parsed.domain, status: 'checking', tld: '' }];
+        renderComStatus();
+        renderResults();
+
+        try {
+          const status = await checkDomainAvailability(parsed.domain, controller.signal, 'cloudflare');
+          if (tldRequestId !== requestId) return;
+          state.comStatus = status;
+          state.variants = [{ domain: parsed.domain, status, tld: '' }];
+          renderComStatus();
+          renderResults();
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') return;
+          if (tldRequestId !== requestId) return;
+          state.comStatus = 'error';
+          state.variants = [{ domain: parsed.domain, status: 'error', tld: '' }];
+          renderResults();
+        }
+        return;
+      }
+
+      const keyword = parsed.keyword || '';
+      if (!isPlausibleKeyword(keyword)) {
+        state.variants = [];
+        renderResults();
+        return;
+      }
+
+      const requestId = tldRequestId + 1;
+      tldRequestId = requestId;
+      if (tldAbort) tldAbort.abort();
+      const controller = new AbortController();
+      tldAbort = controller;
+
+      state.variants = buildKeywordVariants(keyword);
+      renderResults();
+
+      await resolveVariantGroups(state.variants, controller.signal, requestId);
+    }
+
+    function scheduleTypingSearch() {
+      comRequestId += 1;
+      tldRequestId += 1;
+      if (comAbort) { comAbort.abort(); comAbort = null; }
+      if (tldAbort) { tldAbort.abort(); tldAbort = null; }
+
+      clearTimeout(comDebounceTimer);
+      clearTimeout(tldDebounceTimer);
+
+      updateClearButton();
+
+      if (!state.query.trim()) {
+        state.comStatus = 'idle';
+        state.variants = [];
+        state.explicitDomain = '';
+        renderComStatus();
+        renderResults();
+        syncUrlQuery('');
+        return;
+      }
+
+      showInstantFeedback();
+
+      const parsed = parseSearchInput(state.query);
+      if (parsed.mode === 'keyword' && isPlausibleKeyword(parsed.keyword || '')) {
+        state.variants = buildKeywordVariants(parsed.keyword);
+      } else if (parsed.mode === 'explicit' && parsed.domain) {
+        state.explicitDomain = parsed.domain;
+        state.variants = [{ domain: parsed.domain, status: 'checking', tld: '' }];
+      }
+
+      renderResults();
+      if (parsed.mode === 'explicit') {
+        tldDebounceTimer = window.setTimeout(() => { void runTldCheck(); }, COM_DEBOUNCE_MS);
+        syncUrlQuery(state.query);
+        return;
+      }
+
+      if (!isPlausibleKeyword(parsed.keyword || '')) {
+        state.variants = [];
+        return;
+      }
+
+      comDebounceTimer = window.setTimeout(() => { void runComCheck(); }, COM_DEBOUNCE_MS);
+      tldDebounceTimer = window.setTimeout(() => { void runTldCheck(); }, TLD_DEBOUNCE_MS);
+      syncUrlQuery(state.query);
+    }
+
+    async function runSubmitSearch() {
+      cancelPendingChecks();
+      comRequestId += 1;
+      tldRequestId += 1;
+      syncUrlQuery(state.query);
+
+      const thisLock = ++submitLockGeneration;
+      setSubmitLocked(true);
+      const lockStarted = Date.now();
+
+      try {
+        const parsed = parseSearchInput(state.query);
+        if (parsed.mode === 'keyword' && isPlausibleKeyword(parsed.keyword || '')) {
+          await runComCheck();
+        }
+        await runTldCheck();
+      } finally {
+        const remaining = Math.max(0, SUBMIT_LOCK_MS - (Date.now() - lockStarted));
+        window.setTimeout(() => {
+          if (submitLockGeneration === thisLock) setSubmitLocked(false);
+        }, remaining);
+      }
+    }
+
+    function clearSearch() {
+      if (!(searchInput instanceof HTMLInputElement)) return;
+      searchInput.value = '';
+      state.query = '';
+      cancelPendingChecks();
+      state.comStatus = 'idle';
+      state.variants = [];
+      state.explicitDomain = '';
+      updateClearButton();
+      renderComStatus();
+      renderResults();
+      syncUrlQuery('');
+      searchInput.focus();
+    }
+
+    /** @param {RegionId} region */
+    function setRegion(region) {
+      state.region = region;
+      localStorage.setItem(REGION_STORAGE_KEY, region);
+      updateRegionUi();
+      if (state.query.trim()) scheduleTypingSearch();
+    }
+
+    function initRegion() {
+      const stored = localStorage.getItem(REGION_STORAGE_KEY);
+      const valid = stored && stored in REGION_PRESETS;
+      state.region = valid ? /** @type {RegionId} */ (stored) : detectRegionFromLocale();
+      updateRegionUi();
+
+      regionSelect?.addEventListener('change', () => {
+        if (!(regionSelect instanceof HTMLSelectElement)) return;
+        setRegion(/** @type {RegionId} */ (regionSelect.value));
+      });
+    }
+
+    function init() {
+      if (!(searchInput instanceof HTMLInputElement)) return;
+
+      initRegion();
+      initTldGuide();
+
+      searchInput.addEventListener('focus', () => searchShell?.classList.add('is-focused'));
+      searchInput.addEventListener('blur', () => searchShell?.classList.remove('is-focused'));
+
+      searchInput.addEventListener('input', () => {
+        state.query = cleanInput(searchInput.value);
+        if (searchInput.value !== state.query) searchInput.value = state.query;
+        scheduleTypingSearch();
+      });
+
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          void runSubmitSearch();
+        }
+        if (event.key === 'Escape') clearSearch();
+      });
+
+      searchSubmit?.addEventListener('click', () => { void runSubmitSearch(); });
+      searchClear?.addEventListener('click', clearSearch);
+
+      resultsList?.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+
+        const copyBtn = target.closest('.copy-domain-btn');
+        if (copyBtn instanceof HTMLButtonElement && copyBtn.dataset.domain) {
+          void copyDomain(copyBtn.dataset.domain, copyBtn);
+          return;
+        }
+
+        const retryBtn = target.closest('.retry-domain-btn');
+        if (retryBtn instanceof HTMLButtonElement && retryBtn.dataset.domain) {
+          void retryDomain(retryBtn.dataset.domain);
+        }
+      });
+
+      resultsList?.addEventListener('toggle', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLDetailsElement) || !target.classList.contains('register-details')) return;
+        if (!target.open) return;
+        resultsList.querySelectorAll('.register-details[open]').forEach((el) => {
+          if (el !== target) el.removeAttribute('open');
+        });
+      }, true);
+
+      const urlQuery = new URLSearchParams(window.location.search).get('q');
+      if (urlQuery) {
+        const cleaned = cleanInput(urlQuery);
+        if (cleaned) {
+          searchInput.value = cleaned;
+          state.query = cleaned;
+          updateClearButton();
+          void runSubmitSearch();
+          return;
+        }
+      }
+
+      searchInput.focus();
+      renderResults();
+    }
+
+    init();
+  </script>
+</body>
+</html>

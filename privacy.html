@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Anti-Frontrunner privacy policy — what we collect (nothing about your searches)." />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="theme-color" content="#000000" />
+  <title>Privacy — Anti-Frontrunner</title>
+  <link rel="canonical" href="https://ninejack.com/privacy.html" />
+  <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="/assets/favicon-48.png" type="image/png" sizes="48x48" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.02em;
+      line-height: 1.6;
+    }
+
+    a {
+      color: #9ca3af;
+      text-decoration: none;
+      transition: color 0.12s ease;
+    }
+
+    a:hover { color: #fff; }
+
+    .wrap {
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 4rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 0 0 0.5rem;
+    }
+
+    .lede {
+      color: #9ca3af;
+      margin: 0 0 2rem;
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.75rem 0 0.5rem;
+    }
+
+    p, li {
+      color: #9ca3af;
+      font-size: 0.9375rem;
+      margin: 0 0 0.75rem;
+    }
+
+    ul {
+      margin: 0 0 0.75rem;
+      padding-left: 1.25rem;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 2rem;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">&larr; Back to Anti-Frontrunner</a>
+    <h1>Privacy</h1>
+    <p class="lede">Anti-Frontrunner is a client-side domain search tool. We designed it so your searches never pass through our servers.</p>
+
+    <h2>What Anti-Frontrunner collects</h2>
+    <p>Nothing about your domain searches. There is no Anti-Frontrunner backend, account system, or search log.</p>
+    <p>Your browser may store a <strong>region preference</strong> (Global, US, UK, etc.) in <code>localStorage</code> so TLD ordering stays consistent between visits. That value never leaves your device unless you clear site data.</p>
+
+    <h2>What leaves your device</h2>
+    <p>When you search, your browser sends DNS-over-HTTPS queries directly to:</p>
+    <ul>
+      <li><a href="https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/" target="_blank" rel="noopener noreferrer">Cloudflare DNS</a></li>
+      <li><a href="https://developers.google.com/speed/public-dns/docs/doh" target="_blank" rel="noopener noreferrer">Google Public DNS</a></li>
+    </ul>
+    <p>Those providers receive the domain names you look up and your IP address, under their own privacy policies. Anti-Frontrunner does not proxy or log those requests.</p>
+
+    <h2>Shareable search links</h2>
+    <p>If you use a URL with <code>?q=</code>, the search term appears in the address bar, browser history, and any link you share. Treat shared links like any other URL that contains a query string.</p>
+
+    <h2>Register links</h2>
+    <p>Some Register links are affiliate links. When you click through to a registrar, that site&rsquo;s cookies, analytics, and privacy policy apply. We do not control third-party sites.</p>
+
+    <h2>Fonts</h2>
+    <p>We load typefaces from Google Fonts. Google may receive your IP address when those files are fetched. You can block this with a browser extension or network filter.</p>
+
+    <h2>Availability estimates</h2>
+    <p>Results are DNS-based estimates, not registrar confirmations. Always verify availability at checkout.</p>
+
+    <h2>Contact</h2>
+    <p>Questions or issues: open a discussion on <a href="https://github.com/michaelssen/anti-frontrunner" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+  </div>
+</body>
+</html>
